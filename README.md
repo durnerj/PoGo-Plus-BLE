@@ -1,3 +1,4 @@
+# What was this before
 This is a brmlab attempt at building a BLE device compatible with the
 Pokemon GO Plus wristband.  We are trying to reproduce the handshake
 protocol described in:
@@ -9,3 +10,9 @@ with UART interface, connected to a Raspberry Pi.
 
 The device is visible, but the handshake doesn't work and we aren't
 sure why.
+
+# bt sniffs
+
+In /logs we store sniffs from pairings with pogoplus.
+
+You can view them with wireshark. A good filter for the interesting info is: ''' (btatt.service_uuid128 == bb:e8:77:09:5b:89:44:33:ab:7f:8b:8e:ef:0d:8e:37 && (btatt.value contains 03:00:00 || btatt.value contains 05:00:00 || btatt.value contains 04:00)) '''
