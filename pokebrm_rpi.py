@@ -1,4 +1,4 @@
-#!/usr/bin/python
+#!/usr/bin/python3
 #
 # Connect 5V,GND,RX,TX,RTS,CTS to the rpi.  For RTS,CTS you will need
 # to solder an extra pin header on the rpi, but no worries, it's easy.
@@ -13,6 +13,7 @@
 
 import serial
 import time
+from bluepy import btle
 
 UUID_FW_UPDATE_SERVICE = "0000fef5-0000-1000-8000-00805f9b34fb";
 UUID_DEVICE_CONTROL_SERVICE = "21c50462-67cb-63a3-5c4c-82b5b9939aeb";
@@ -36,8 +37,8 @@ def uuid_bytes(uuid):
 
 class BLEUART(object):
     def __init__(self):
-        self.ser = serial.Serial('/dev/ttyAMA0', 9600, rtscts=1)
-        print(self.ser.name)
+        self.dev = btle.Peripheral(iface=0)
+        print(self.dev.iface)
 
     def cmd_ok(self, cmd):
         time.sleep(0.05)
@@ -62,12 +63,13 @@ class BLEUART(object):
         self.cmd_ret('ATE=0')  # read echo of this command
 
     def __del__(self):
-        self.ser.close()
+        self.dev.disconnect()
 
 
 if __name__ == "__main__":
     ble = BLEUART()
     ble.reset()
+    print("BLE_Started")
     ble.cmd_ok('AT+GAPDEVNAME=Pokemon GO Plus')
     ble.cmd_ret('AT+GATTADDSERVICE=UUID128=%s' % (uuid_bytes(UUID_CERTIFICATE_SERVICE),))
     sfida_commands = int(ble.cmd_ret('AT+GATTADDCHAR=UUID128=%s,PROPERTIES=0x1A,MIN_LEN=1,MAX_LEN=8,DATATYPE=bytearray' % (uuid_bytes(UUID_SFIDA_COMMANDS_CHAR),)))
