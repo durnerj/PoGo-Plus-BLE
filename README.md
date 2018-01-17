@@ -42,5 +42,3 @@ When done dont forget to power bluetooth back up:
 ```
 sudo btmgmt power on
 ```
-
-Possible other options not needed
