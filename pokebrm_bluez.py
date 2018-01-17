@@ -2,6 +2,9 @@
 
 import dbus
 import dbus.mainloop.glib
+import os
+from datetime import datetime
+now = datetime.now()
 
 try:
     from gi.repository import GObject
@@ -29,55 +32,58 @@ mainloop = None
 
 class fw_update_request_chrc(Characteristic):
     def __init__(self, bus, index, service):
-        UUID = UUID_FW_UPDATE_REQUEST_CHAR
+        self.UUID = UUID_FW_UPDATE_REQUEST_CHAR
         Characteristic.__init__(
             self, bus, index,
-            UUID,
+            self.UUID,
             ['write'],
             service)
         self.value = 0
 
     def WriteValue(self, value, options):
         self.value = value
+        log(self.UUID)
 
 
 class fw_version_chrc(Characteristic):
     def __init__(self, bus, index, service):
-        UUID = UUID_FW_VERSION_CHAR
+        self.UUID = UUID_FW_VERSION_CHAR
 
         Characteristic.__init__(
             self, bus, index,
-            UUID,
+            self.UUID,
             ['read'],
             service)
         self.value = 0
 
     def ReadValue(self, options):
+        log(self.UUID)
         return [dbus.Byter(self.value)]
 
 
 class led_vibrate_chrc(Characteristic):
     def __init__(self, bus, index, service):
-        UUID = UUID_LED_VIBRATE_CTRL_CHAR
+        self.UUID = UUID_LED_VIBRATE_CTRL_CHAR
 
         Characteristic.__init__(
             self, bus, index,
-            UUID,
+            self.UUID,
             ['write'],
             service)
         self.value = 0
 
     def WriteValue(self, value, options):
         self.value = value
+        log(self.UUID)
 
 
 class button_notif_chrc(Characteristic):
     def __init__(self, bus, index, service):
-        UUID = UUID_BUTTON_NOTIF_CHAR
+        self.UUID = UUID_BUTTON_NOTIF_CHAR
 
         Characteristic.__init__(
             self, bus, index,
-            UUID,
+            self.UUID,
             ['notify'],
             service)
         self.value = 0
@@ -89,6 +95,7 @@ class button_notif_chrc(Characteristic):
             return
 
         self.notifying = True
+        log(self.UUID)
 
     def StopNotify(self):
         if not self.notifying:
@@ -96,15 +103,16 @@ class button_notif_chrc(Characteristic):
             return
 
         self.notifying = False
+        log(self.UUID)
 
 
 class sfida_commands_chrc(Characteristic):
     def __init__(self, bus, index, service):
-        UUID = UUID_SFIDA_COMMANDS_CHAR
+        self.UUID = UUID_SFIDA_COMMANDS_CHAR
 
         Characteristic.__init__(
             self, bus, index,
-            UUID,
+            self.UUID,
             ['notify'],
             service)
         self.value = 0
@@ -112,80 +120,91 @@ class sfida_commands_chrc(Characteristic):
 
     def StartNotify(self):
         if self.notifying:
-            print('Already notifying, nothing to do')
+            log('Already notifying, nothing to do')
             return
 
         self.notifying = True
+        log(self.UUID)
 
     def StopNotify(self):
         if not self.notifying:
-            print('Not notifying, nothing to do')
+            log('Not notifying, nothing to do')
             return
 
         self.notifying = False
+        log(self.UUID)
 
 
 class sfida_to_central_chrc(Characteristic):
     def __init__(self, bus, index, service):
-        UUID = UUID_SFIDA_TO_CENTRAL_CHAR
+        self.UUID = UUID_SFIDA_TO_CENTRAL_CHAR
 
         Characteristic.__init__(
             self, bus, index,
-            UUID,
+            self.UUID,
             ['read'],
             service)
         self.value = 0
 
     def ReadValue(self, options):
+        log("sfida read: " + repr(self.UUID))
         return [dbus.Byte(self.value)]
 
 
 class central_to_sfida_chrc(Characteristic):
     def __init__(self, bus, index, service):
-        UUID = UUID_CENTRAL_TO_SFIDA_CHAR
+        self.UUID = UUID_CENTRAL_TO_SFIDA_CHAR
 
         Characteristic.__init__(
             self, bus, index,
-            UUID,
+            self.UUID,
             ['write'],
             service)
         self.value = 0
 
     def WriteValue(self, value, options):
         self.value = value
+        log(self.UUID)
 
 
 class battery_level_chrc(Characteristic):
     def __init__(self, bus, index, service):
-        UUID = UUID_BATTERY_LEVEL_CHAR
+        self.UUID = UUID_BATTERY_LEVEL_CHAR
 
         Characteristic.__init__(
             self, bus, index,
-            UUID,
+            self.UUID,
             ['notify', 'read'],
             service)
         self.value = 80
         self.notifying = False
 
     def ReadValue(self, options):
-        print('Battery Level Read: ' + repr(self.value))
+        log('Battery Level Read: ' + repr(self.value))
+        log(self.UUID)
         return [dbus.Byte(self.value)]
+
 
     def StartNotify(self):
         if self.notifying:
-            print('Already notifying, nothing to do')
+            log('Already notifying, nothing to do')
             return
 
         self.notifying = True
         self.notify_battery_level()
+        log(self.UUID)
 
     def StopNotify(self):
         if not self.notifying:
-            print('Not notifying, nothing to do')
+            log('Not notifying, nothing to do')
             return
 
         self.notifying = False
+        log(self.UUID)
 
+def log(message):
+    print(now.strftime("%Y-%m-%d %H:%M:%S") + ": " + message)
+    
 #class fw_update_service(Service):
 #    """ Fake FW Update Service."""
 #
@@ -293,6 +312,7 @@ def main():
                                      reply_handler=register_ad_cb,
                                      error_handler=register_ad_error_cb)
 
+    log("PokeBrm Started")
     try:
         mainloop.run()
     except KeyboardInterrupt:
@@ -303,4 +323,3 @@ def main():
 
 if __name__ == '__main__':
         main()
-
