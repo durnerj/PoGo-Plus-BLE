@@ -259,10 +259,7 @@ class po_go_plus_app(Application):
 class po_go_plus_advertisement(Advertisement):
     def __init__(self, bus, index):
         Advertisement.__init__(self, bus, index, 'peripheral')
-        #self.add_service_uuid(UUID_BATTERY_SERVICE)
-        #self.add_service_uuid(UUID_DEVICE_CONTROL_SERVICE)
-        #self.add_service_uuid(UUID_CERTIFICATE_SERVICE)
-        #self.add_service_data("21c50462", [0x00])
+        self.add_service_data("21c50462", [0x00])
         self.include_tx_power = True
 
 
