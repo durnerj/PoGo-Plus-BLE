@@ -17,6 +17,7 @@ from bluez_components import *
 UUID_DEVICE_CONTROL_SERVICE = "21c50462-67cb-63a3-5c4c-82b5b9939aeb"
 UUID_LED_VIBRATE_CTRL_CHAR =  "21c50462-67cb-63a3-5c4c-82b5b9939aec"
 UUID_BUTTON_NOTIF_CHAR =      "21c50462-67cb-63a3-5c4c-82b5b9939aed"
+UUID_UNKNOWN_CHAR =           "21c50462-67cb-63a3-5c4c-82b5b9939aee"
 UUID_FW_UPDATE_REQUEST_CHAR = "21c50462-67cb-63a3-5c4c-82b5b9939aef"
 UUID_FW_VERSION_CHAR =        "21c50462-67cb-63a3-5c4c-82b5b9939af0"
 UUID_CERTIFICATE_SERVICE =    "bbe87709-5b89-4433-ab7f-8b8eef0d8e37"
@@ -58,7 +59,7 @@ class fw_version_chrc(Characteristic):
 
     def ReadValue(self, options):
         log(self.UUID)
-        return [dbus.Byter(self.value)]
+        return [dbus.Byte(self.value)]
 
 
 class led_vibrate_chrc(Characteristic):
@@ -91,35 +92,6 @@ class button_notif_chrc(Characteristic):
 
     def StartNotify(self):
         if self.notifying:
-            print('Already notifying, nothing to do')
-            return
-
-        self.notifying = True
-        log(self.UUID)
-
-    def StopNotify(self):
-        if not self.notifying:
-            print('Not notifying, nothing to do')
-            return
-
-        self.notifying = False
-        log(self.UUID)
-
-
-class sfida_commands_chrc(Characteristic):
-    def __init__(self, bus, index, service):
-        self.UUID = UUID_SFIDA_COMMANDS_CHAR
-
-        Characteristic.__init__(
-            self, bus, index,
-            self.UUID,
-            ['notify'],
-            service)
-        self.value = 0
-        self.notifying = False
-
-    def StartNotify(self):
-        if self.notifying:
             log('Already notifying, nothing to do')
             return
 
@@ -135,25 +107,9 @@ class sfida_commands_chrc(Characteristic):
         log(self.UUID)
 
 
-class sfida_to_central_chrc(Characteristic):
+class unknown_chrc(Characteristic):
     def __init__(self, bus, index, service):
-        self.UUID = UUID_SFIDA_TO_CENTRAL_CHAR
-
-        Characteristic.__init__(
-            self, bus, index,
-            self.UUID,
-            ['read'],
-            service)
-        self.value = 0
-
-    def ReadValue(self, options):
-        log("sfida read: " + repr(self.UUID))
-        return [dbus.Byte(self.value)]
-
-
-class central_to_sfida_chrc(Characteristic):
-    def __init__(self, bus, index, service):
-        self.UUID = UUID_CENTRAL_TO_SFIDA_CHAR
+        self.UUID = UUID_UNKNOWN_CHAR
 
         Characteristic.__init__(
             self, bus, index,
@@ -165,6 +121,75 @@ class central_to_sfida_chrc(Characteristic):
     def WriteValue(self, value, options):
         self.value = value
         log(self.UUID)
+
+
+class sfida_commands_chrc(Characteristic):
+    def __init__(self, bus, index, service):
+        self.UUID = UUID_SFIDA_COMMANDS_CHAR
+        self.tag = "Commands"
+
+        Characteristic.__init__(
+            self, bus, index,
+            self.UUID,
+            ['notify'],
+            service)
+        self.value = 0
+        self.notifying = False
+
+    def StartNotify(self):
+        if self.notifying:
+            log('Already notifying, nothing to do', self.tag)
+            return
+
+        self.notifying = True
+#        GObject.timeout_add(1000, self.StopNotify)
+        log("start " + str(self.uuid), self.tag)
+
+    def StopNotify(self):
+        if not self.notifying:
+            log('Not notifying, nothing to do', self.tag)
+            return
+
+        self.notifying = False
+        log("stop " + self.UUID, self.tag)
+
+
+class sfida_to_central_chrc(Characteristic):
+    def __init__(self, bus, index, service):
+        self.UUID = UUID_SFIDA_TO_CENTRAL_CHAR
+        self.tag = "STC"
+
+        Characteristic.__init__(
+            self, bus, index,
+            self.UUID,
+            ['read'],
+            service)
+        self.value = [3,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+        for num, val in enumerate(self.value):
+            self.value[num] = dbus.Byte(val)
+
+
+
+    def ReadValue(self, options):
+        log(self.UUID + " " + self.value, tag)
+        return [dbus.Byte(self.value)]
+
+
+class central_to_sfida_chrc(Characteristic):
+    def __init__(self, bus, index, service):
+        self.UUID = UUID_CENTRAL_TO_SFIDA_CHAR
+        self.tag = "CTS"
+
+        Characteristic.__init__(
+            self, bus, index,
+            self.UUID,
+            ['write'],
+            service)
+        self.value = 3
+
+    def WriteValue(self, value, options):
+        log([self.UUID, value, options], tag)
+        self.value = value
 
 
 class battery_level_chrc(Characteristic):
@@ -202,18 +227,6 @@ class battery_level_chrc(Characteristic):
         self.notifying = False
         log(self.UUID)
 
-def log(message):
-    print(now.strftime("%Y-%m-%d %H:%M:%S") + ": " + message)
-    
-#class fw_update_service(Service):
-#    """ Fake FW Update Service."""
-#
-#    def __init__(self, bus, index):
-#        UUID = UUID_FW_UPDATE_SERVICE
-#        Service.__init__(self, bus, index, UUID, True)
-#        self.add_characteristic(fw_update_request_chrc(bus, 0, self))
-#        self.add_characteristic(fw_version_chrc(bus, 1, self))
-
 
 class device_control_service(Service):
     """ Fake Device Control Update Service."""
@@ -223,6 +236,7 @@ class device_control_service(Service):
         Service.__init__(self, bus, index, UUID, True)
         self.add_characteristic(led_vibrate_chrc(bus, 0, self))
         self.add_characteristic(button_notif_chrc(bus, 1, self))
+        self.add_characteristic(unknown_chrc(bus, 2, self))
         self.add_characteristic(fw_update_request_chrc(bus, 3, self))
         self.add_characteristic(fw_version_chrc(bus, 4, self))
 
@@ -250,7 +264,6 @@ class battery_service(Service):
 class po_go_plus_app(Application):
     def __init__(self, bus):
         Application.__init__(self, bus)
-        #self.add_service(fw_update_service(bus, 0))
         self.add_service(battery_service(bus, 0))
         self.add_service(device_control_service(bus, 1))
         self.add_service(certificate_service(bus, 2))
@@ -261,6 +274,10 @@ class po_go_plus_advertisement(Advertisement):
         Advertisement.__init__(self, bus, index, 'peripheral')
         self.add_service_data("21c50462", [0x00])
         self.include_tx_power = True
+
+
+def log(message, tag="INFO"):
+    print(now.strftime("%Y-%m-%d %H:%M:%S") + ":[" + tag + "] " + message)
 
 
 def main():
