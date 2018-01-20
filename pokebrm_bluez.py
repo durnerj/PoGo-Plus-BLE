@@ -1,9 +1,9 @@
 #!/usr/bin/python3
 
-import dbus
 import dbus.mainloop.glib
-import os
+from bluez_components import *
 from datetime import datetime
+
 now = datetime.now()
 
 try:
@@ -11,21 +11,18 @@ try:
 except ImportError:
     import gobject as GObject
 
-from bluez_components import *
-
-#UUID_FW_UPDATE_SERVICE =      "0000fef5-0000-1000-8000-00805f9b34fb"
 UUID_DEVICE_CONTROL_SERVICE = "21c50462-67cb-63a3-5c4c-82b5b9939aeb"
-UUID_LED_VIBRATE_CTRL_CHAR =  "21c50462-67cb-63a3-5c4c-82b5b9939aec"
-UUID_BUTTON_NOTIF_CHAR =      "21c50462-67cb-63a3-5c4c-82b5b9939aed"
-UUID_UNKNOWN_CHAR =           "21c50462-67cb-63a3-5c4c-82b5b9939aee"
+UUID_LED_VIBRATE_CTRL_CHAR = "21c50462-67cb-63a3-5c4c-82b5b9939aec"
+UUID_BUTTON_NOTIF_CHAR = "21c50462-67cb-63a3-5c4c-82b5b9939aed"
+UUID_UNKNOWN_CHAR = "21c50462-67cb-63a3-5c4c-82b5b9939aee"
 UUID_FW_UPDATE_REQUEST_CHAR = "21c50462-67cb-63a3-5c4c-82b5b9939aef"
-UUID_FW_VERSION_CHAR =        "21c50462-67cb-63a3-5c4c-82b5b9939af0"
-UUID_CERTIFICATE_SERVICE =    "bbe87709-5b89-4433-ab7f-8b8eef0d8e37"
-UUID_CENTRAL_TO_SFIDA_CHAR =  "bbe87709-5b89-4433-ab7f-8b8eef0d8e38"
-UUID_SFIDA_COMMANDS_CHAR =    "bbe87709-5b89-4433-ab7f-8b8eef0d8e39"
-UUID_SFIDA_TO_CENTRAL_CHAR =  "bbe87709-5b89-4433-ab7f-8b8eef0d8e3a"
-UUID_BATTERY_SERVICE =        "180f"
-UUID_BATTERY_LEVEL_CHAR =     "2A19"
+UUID_FW_VERSION_CHAR = "21c50462-67cb-63a3-5c4c-82b5b9939af0"
+UUID_CERTIFICATE_SERVICE = "bbe87709-5b89-4433-ab7f-8b8eef0d8e37"
+UUID_CENTRAL_TO_SFIDA_CHAR = "bbe87709-5b89-4433-ab7f-8b8eef0d8e38"
+UUID_SFIDA_COMMANDS_CHAR = "bbe87709-5b89-4433-ab7f-8b8eef0d8e39"
+UUID_SFIDA_TO_CENTRAL_CHAR = "bbe87709-5b89-4433-ab7f-8b8eef0d8e3a"
+UUID_BATTERY_SERVICE = "180f"
+UUID_BATTERY_LEVEL_CHAR = "2A19"
 UUID_CLIENT_CHARACTERISTIC_CONFIG = "2902"
 
 mainloop = None
@@ -142,7 +139,7 @@ class sfida_commands_chrc(Characteristic):
             return
 
         self.notifying = True
-#        GObject.timeout_add(1000, self.StopNotify)
+        #        GObject.timeout_add(1000, self.StopNotify)
         log("start " + str(self.uuid), self.tag)
 
     def StopNotify(self):
@@ -164,14 +161,12 @@ class sfida_to_central_chrc(Characteristic):
             self.UUID,
             ['read'],
             service)
-        self.value = [3,0,0,0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]
+        self.value = [3, 0, 0, 0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]
         for num, val in enumerate(self.value):
             self.value[num] = dbus.Byte(val)
 
-
-
     def ReadValue(self, options):
-        log(self.UUID + " " + self.value, tag)
+        log(self.UUID + " " + str(self.value), self.tag)
         return [dbus.Byte(self.value)]
 
 
@@ -188,7 +183,7 @@ class central_to_sfida_chrc(Characteristic):
         self.value = 3
 
     def WriteValue(self, value, options):
-        log([self.UUID, value, options], tag)
+        log([self.UUID, value, options], self.tag)
         self.value = value
 
 
@@ -208,7 +203,6 @@ class battery_level_chrc(Characteristic):
         log('Battery Level Read: ' + repr(self.value))
         log(self.UUID)
         return [dbus.Byte(self.value)]
-
 
     def StartNotify(self):
         if self.notifying:
@@ -289,21 +283,20 @@ def main():
 
     # Get ServiceManager and AdvertisingManager
     gatt_properties = [
-            {"Name": "Discoverable", "Set": True, "Value": False},
-#            {"Name": "Alias", "Set": True, "Value": "Pokemon GO Plus"},
+        {"Name": "Discoverable", "Set": True, "Value": False},
     ]
 
     service_manager = get_service_manager(bus, gatt_properties)
 
     ad_properties = [
-            {"Name": "Discoverable", "Set": True, "Value": True},
-            {"Name": "DiscoverableTimeout", "Set": True, "Value": 0},
-            {"Name": "Class", "Set": False},
-            {"Name": "Address", "Set": False},
-            {"Name": "Name", "Set": False},
-            {"Name": "Alias", "Set": True, "Value": "Pokemon GO Plus"},
-            {"Name": "UUIDs", "Set": False},
-            {"Name": "Modalias", "Set": False},
+        {"Name": "Discoverable", "Set": True, "Value": True},
+        {"Name": "DiscoverableTimeout", "Set": True, "Value": 0},
+        {"Name": "Class", "Set": False},
+        {"Name": "Address", "Set": False},
+        {"Name": "Name", "Set": False},
+        {"Name": "Alias", "Set": True, "Value": "Pokemon GO Plus"},
+        {"Name": "UUIDs", "Set": False},
+        {"Name": "Modalias", "Set": False},
     ]
 
     ad_manager = get_advertisement_manager(bus, ad_properties)
@@ -336,4 +329,4 @@ def main():
 
 
 if __name__ == '__main__':
-        main()
+    main()
